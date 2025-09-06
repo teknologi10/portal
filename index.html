@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Link Manager</title>
+    <!-- Memuat Tailwind CSS dari CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Animasi sederhana untuk modal agar lebih halus */
+        .modal-enter {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        .modal-enter-active {
+            opacity: 1;
+            transform: scale(1);
+            transition: all 0.2s ease-out;
+        }
+        .modal-leave-active {
+            opacity: 0;
+            transform: scale(0.95);
+            transition: all 0.2s ease-in;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        @import url('https://rsms.me/inter/inter.css');
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div id="app" class="container mx-auto p-4 md:p-8">
+        
+        <!-- Header Aplikasi -->
+        <header class="mb-8 text-center">
+            <h1 class="text-4xl font-bold text-gray-700">Portal Link Manager 📚</h1>
+            <p class="text-gray-500 mt-2">Kelola semua link portal dan mata pelajaran Anda di satu tempat.</p>
+        </header>
+
+        <!-- Tombol Tambah Portal Utama -->
+        <div class="flex justify-end mb-6">
+            <button onclick="openModal('addPortal')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 duration-300">
+                + Tambah Portal
+            </button>
+        </div>
+
+        <!-- Kontainer untuk Daftar Portal -->
+        <main id="portal-container" class="space-y-6">
+            <!-- Portal akan dirender oleh JavaScript di sini -->
+        </main>
+
+    </div>
+
+    <!-- Modal untuk Form Tambah/Edit -->
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden modal-enter">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-md p-6">
+            <h2 id="modal-title" class="text-2xl font-bold mb-4 text-gray-800">Judul Modal</h2>
+            <form id="modal-form" autocomplete="off">
+                <input type="hidden" id="form-mode"><input type="hidden" id="portal-index"><input type="hidden" id="mapel-index">
+                <div class="space-y-4">
+                    <div>
+                        <label for="nama" class="block text-sm font-medium text-gray-700">Nama</label>
+                        <input type="text" id="nama" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" required>
+                    </div>
+                    <div>
+                        <label for="link" class="block text-sm font-medium text-gray-700">Link</label>
+                        <input type="url" id="link" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="https://contoh.com" required>
+                    </div>
+                    <div id="waktu-field" class="hidden">
+                        <label for="waktu" class="block text-sm font-medium text-gray-700">Waktu</label>
+                        <input type="text" id="waktu" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="Senin, 08:00 - 10:00">
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" onclick="closeModal()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg transition duration-300">Batal</button>
+                    <button type="submit" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+<script>
+// ===================================================================================
+// DATA (Model)
+// ===================================================================================
+let portals = [
+    {
+        namaPortal: "Portal Akademik Utama",
+        linkPortal: "https://portal-akademik-contoh.com",
+        isOpen: true, // Untuk mengontrol state buka/tutup (accordion)
+        mapel: [
+            { namaMapel: "Matematika Dasar", linkMapel: "https://meet.google.com/xyz-1", waktu: "Senin, 08:00 - 10:00" },
+            { namaMapel: "Fisika Kuantum", linkMapel: "https://meet.google.com/xyz-2", waktu: "Selasa, 10:00 - 12:00" },
+        ]
+    },
+    {
+        namaPortal: "Portal E-Learning",
+        linkPortal: "https://e-learning-kampus-contoh.com",
+        isOpen: false,
+        mapel: [
+            { namaMapel: "Bahasa Inggris Lanjutan", linkMapel: "https://zoom.us/j/12345", waktu: "Rabu, 09:00 - 11:00" },
+        ]
+    }
+];
+
+// ===================================================================================
+// RENDER FUNCTION (View)
+// ===================================================================================
+function renderPortals() {
+    const portalContainer = document.getElementById('portal-container');
+    portalContainer.innerHTML = '';
+
+    if (portals.length === 0) {
+        portalContainer.innerHTML = `
+            <div class="text-center py-12 px-6 bg-white rounded-lg shadow-md">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" /></svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">Belum ada portal</h3>
+                <p class="mt-1 text-sm text-gray-500">Mulai dengan menambahkan portal baru.</p>
+            </div>`;
+        return;
+    }
+
+    portals.forEach((portal, portalIndex) => {
+        const portalCard = document.createElement('div');
+        portalCard.className = 'bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300';
+        
+        const mapelListHTML = `
+            <div class="border-t border-gray-200 p-4 space-y-3 ${portal.isOpen ? '' : 'hidden'}">
+                ${portal.mapel.length > 0 ? portal.mapel.map((mapel, mapelIndex) => `
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition duration-200">
+                        <div class="flex-grow">
+                            <a href="${mapel.linkMapel}" target="_blank" class="font-semibold text-indigo-600 hover:underline">${mapel.namaMapel}</a>
+                            <p class="text-sm text-gray-500">${mapel.waktu}</p>
+                        </div>
+                        <div class="flex items-center space-x-1 sm:space-x-2 ml-4">
+                            <button onclick="openModal('editMapel', ${portalIndex}, ${mapelIndex})" class="text-gray-400 hover:text-blue-500 p-1 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" /></svg></button>
+                            <button onclick="hapusMapel(${portalIndex}, ${mapelIndex})" class="text-gray-400 hover:text-red-500 p-1 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg></button>
+                        </div>
+                    </div>
+                `).join('') : `<p class="text-center text-gray-500 py-4">Belum ada mata pelajaran.</p>`}
+                <div class="mt-4">
+                     <button onclick="openModal('addMapel', ${portalIndex})" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg text-sm transition duration-300">
+                        + Tambah Mata Pelajaran
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        portalCard.innerHTML = `
+            <div class="flex items-center justify-between p-4 bg-white cursor-pointer" onclick="togglePortal(${portalIndex})">
+                <div class="flex-grow">
+                    <h2 class="text-xl font-bold text-gray-800">${portal.namaPortal}</h2>
+                    <a href="${portal.linkPortal}" target="_blank" onclick="event.stopPropagation()" class="text-sm text-blue-500 hover:underline">${portal.linkPortal}</a>
+                </div>
+                <div class="flex items-center space-x-1 sm:space-x-2 ml-4">
+                    <button onclick="event.stopPropagation(); openModal('editPortal', ${portalIndex})" class="text-gray-400 hover:text-blue-500 p-2 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" /></svg></button>
+                    <button onclick="event.stopPropagation(); hapusPortal(${portalIndex})" class="text-gray-400 hover:text-red-500 p-2 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg></button>
+                    <div class="text-gray-500 p-2 rounded-full transition-transform duration-300 ${portal.isOpen ? 'rotate-180' : ''}">
+                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+                    </div>
+                </div>
+            </div>
+            ${mapelListHTML}
+        `;
+
+        portalContainer.appendChild(portalCard);
+    });
+}
+
+// ===================================================================================
+// CONTROLLERS (Logika Aplikasi)
+// ===================================================================================
+
+// --- Fungsi untuk Buka/Tutup Portal (Accordion) ---
+function togglePortal(portalIndex) {
+    portals[portalIndex].isOpen = !portals[portalIndex].isOpen;
+    renderPortals();
+}
+
+// --- CRUD untuk Portal ---
+function hapusPortal(portalIndex) {
+    if (confirm(`Apakah Anda yakin ingin menghapus portal "${portals[portalIndex].namaPortal}"?`)) {
+        portals.splice(portalIndex, 1);
+        renderPortals();
+    }
+}
+
+// --- CRUD untuk Mapel ---
+function hapusMapel(portalIndex, mapelIndex) {
+    const mapelName = portals[portalIndex].mapel[mapelIndex].namaMapel;
+    if (confirm(`Apakah Anda yakin ingin menghapus mapel "${mapelName}"?`)) {
+        portals[portalIndex].mapel.splice(mapelIndex, 1);
+        renderPortals();
+    }
+}
+
+// --- Logika Modal ---
+const modal = document.getElementById('modal');
+const modalForm = document.getElementById('modal-form');
+const modalTitle = document.getElementById('modal-title');
+const formMode = document.getElementById('form-mode');
+const portalIndexInput = document.getElementById('portal-index');
+const mapelIndexInput = document.getElementById('mapel-index');
+const namaInput = document.getElementById('nama');
+const linkInput = document.getElementById('link');
+const waktuInput = document.getElementById('waktu');
+const waktuField = document.getElementById('waktu-field');
+
+function openModal(mode, pIndex = null, mIndex = null) {
+    formMode.value = mode;
+    portalIndexInput.value = pIndex;
+    mapelIndexInput.value = mIndex;
+    
+    modalForm.reset();
+    waktuField.classList.add('hidden');
+
+    if (mode === 'addPortal') {
+        modalTitle.innerText = 'Tambah Portal Baru';
+    } else if (mode === 'editPortal') {
+        modalTitle.innerText = 'Edit Portal';
+        const portal = portals[pIndex];
+        namaInput.value = portal.namaPortal;
+        linkInput.value = portal.linkPortal;
+    } else if (mode === 'addMapel') {
+        modalTitle.innerText = `Tambah Mapel di ${portals[pIndex].namaPortal}`;
+        waktuField.classList.remove('hidden');
+    } else if (mode === 'editMapel') {
+        modalTitle.innerText = 'Edit Mapel';
+        const mapel = portals[pIndex].mapel[mIndex];
+        namaInput.value = mapel.namaMapel;
+        linkInput.value = mapel.linkMapel;
+        waktuInput.value = mapel.waktu;
+        waktuField.classList.remove('hidden');
+    }
+    
+    modal.classList.remove('hidden');
+    requestAnimationFrame(() => { modal.classList.add('modal-enter-active'); });
+}
+
+function closeModal() {
+     modal.classList.remove('modal-enter-active');
+     modal.classList.add('modal-leave-active');
+     setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('modal-leave-active'); }, 200);
+}
+
+modalForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const mode = formMode.value;
+    const pIndex = portalIndexInput.value;
+    const mIndex = mapelIndexInput.value;
+    const nama = namaInput.value.trim();
+    const link = linkInput.value.trim();
+    const waktu = waktuInput.value.trim();
+
+    if (!nama || !link) { alert("Nama dan Link tidak boleh kosong."); return; }
+
+    if (mode === 'addPortal') {
+        portals.push({ namaPortal: nama, linkPortal: link, isOpen: true, mapel: [] });
+    } else if (mode === 'editPortal') {
+        portals[pIndex].namaPortal = nama;
+        portals[pIndex].linkPortal = link;
+    } else if (mode === 'addMapel') {
+        portals[pIndex].mapel.push({ namaMapel: nama, linkMapel: link, waktu: waktu });
+    } else if (mode === 'editMapel') {
+        portals[pIndex].mapel[mIndex] = { namaMapel: nama, linkMapel: link, waktu: waktu };
+    }
+
+    closeModal();
+    renderPortals();
+});
+
+modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+// ===================================================================================
+// INISIALISASI APLIKASI
+// ===================================================================================
+document.addEventListener('DOMContentLoaded', renderPortals);
+</script>
+
+</body>
+</html>
+
